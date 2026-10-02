@@ -1,0 +1,13 @@
+version: "3.8"
+services:
+  face-auth:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./faces.db:/app/faces.db
+      - deepface-models:/root/.deepface
+    restart: unless-stopped
+
+volumes:
+  deepface-models:

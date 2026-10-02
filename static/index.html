@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Face Auth Demo</title>
+<style>
+  body { font-family: -apple-system, sans-serif; background: #0d0f10; color: #e8e8e8; display: flex; flex-direction: column; align-items: center; padding: 40px 16px; }
+  h1 { font-weight: 600; margin-bottom: 4px; }
+  p.sub { color: #888; margin-top: 0; }
+  video, canvas { border-radius: 12px; border: 2px solid #2a2a2a; }
+  #video { width: 360px; height: 270px; object-fit: cover; }
+  .row { display: flex; gap: 12px; margin: 16px 0; }
+  input, button { padding: 10px 14px; border-radius: 8px; border: 1px solid #333; background: #1a1c1e; color: #eee; font-size: 14px; }
+  button { cursor: pointer; background: #2d7d46; border: none; font-weight: 600; }
+  button:hover { background: #359150; }
+  button.secondary { background: #333; }
+  button.secondary:hover { background: #444; }
+  #result { margin-top: 20px; padding: 14px 18px; border-radius: 10px; background: #16181a; min-width: 340px; white-space: pre-wrap; font-family: monospace; font-size: 13px; }
+  label { font-size: 13px; color: #aaa; }
+</style>
+</head>
+<body>
+  <h1>🔐 Face Auth Demo</h1>
+  <p class="sub">Enroll your face once, then verify to log in</p>
+
+  <video id="video" autoplay playsinline></video>
+  <canvas id="canvas" style="display:none;"></canvas>
+
+  <div class="row">
+    <input id="userId" placeholder="user id (e.g. prakash)" value="prakash" />
+  </div>
+  <div class="row">
+    <button onclick="enroll()">📸 Enroll Face</button>
+    <button class="secondary" onclick="verify()">✅ Verify / Login</button>
+  </div>
+
+  <div id="result">Ready.</div>
+
+<script>
+const API = "http://localhost:8000"; // change to your deployed service URL
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const resultDiv = document.getElementById("result");
+
+navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+  video.srcObject = stream;
+}).catch(err => {
+  resultDiv.textContent = "Camera error: " + err.message;
+});
+
+function captureBlob() {
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext("2d").drawImage(video, 0, 0);
+  return new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", 0.92));
+}
+
+async function enroll() {
+  resultDiv.textContent = "Enrolling...";
+  const blob = await captureBlob();
+  const fd = new FormData();
+  fd.append("user_id", document.getElementById("userId").value);
+  fd.append("file", blob, "face.jpg");
+
+  const res = await fetch(`${API}/enroll`, { method: "POST", body: fd });
+  const data = await res.json();
+  resultDiv.textContent = JSON.stringify(data, null, 2);
+}
+
+async function verify() {
+  resultDiv.textContent = "Verifying...";
+  const blob = await captureBlob();
+  const fd = new FormData();
+  fd.append("file", blob, "face.jpg");
+  // Uncomment to require a specific user match instead of searching all:
+  // fd.append("user_id", document.getElementById("userId").value);
+
+  const res = await fetch(`${API}/verify`, { method: "POST", body: fd });
+  const data = await res.json();
+  resultDiv.textContent = JSON.stringify(data, null, 2);
+
+  if (data.match) {
+    resultDiv.textContent += `\n\n✅ Welcome, ${data.user_id}! Token issued — pass this JWT to your other apps.`;
+  } else {
+    resultDiv.textContent += `\n\n❌ No match found.`;
+  }
+}
+</script>
+</body>
+</html>

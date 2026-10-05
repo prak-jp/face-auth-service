@@ -26,6 +26,7 @@ from fastapi import FastAPI, File, UploadFile, HTTPException, Form, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse  # Naya import add kiya gaya hai
 from pydantic import BaseModel
 from PIL import Image
 import jwt
@@ -158,6 +159,15 @@ class EnrollResponse(BaseModel):
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
+
+# Naya Homepage Endpoint
+@app.get("/", response_class=FileResponse)
+def home():
+    """Serve the index.html page at the root URL."""
+    html_path = Path(__file__).parent.parent / "static" / "index.html"
+    return str(html_path)
+
+
 @app.get("/health")
 def health():
     return {"status": "ok", "model": MODEL_NAME}

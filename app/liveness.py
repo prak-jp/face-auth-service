@@ -15,7 +15,6 @@ from typing import List
 import numpy as np
 from PIL import Image
 import mediapipe as mp
-
 mp_face_mesh = mp.solutions.face_mesh
 
 # Eye landmark indices (MediaPipe FaceMesh, 468-point model)
